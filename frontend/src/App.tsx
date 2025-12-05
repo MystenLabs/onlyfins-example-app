@@ -5,6 +5,7 @@ import { DiscordLogoIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
 import { ProfileDropdown } from "./components/ProfileDropdown";
 import CreateUsernameModal from "./components/createUsernameModal";
 import { useUserSubname } from "./hooks/useUserSubname";
+import { Feed } from "./components/Feed";
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -61,7 +62,14 @@ function App() {
         </Box>
       </Flex>
       <Container>
-            
+        <Container
+          mt="5"
+          pt="2"
+          px="4"
+          style={{ maxWidth: '600px', margin: '0 auto' }}
+        >
+          <Feed />
+        </Container>
       </Container>
     </>
   );
