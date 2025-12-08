@@ -13,8 +13,14 @@ const MOCK_CAPTIONS = [
   "Learning Move has been such a rewarding experience. The type safety is incredible.",
 ];
 
-// Mock blob ID for testing (same for all posts)
-const MOCK_BLOB_ID = "ZpybC85My9t2vJz8-J61wR5OUZI1v36ma-zQPzo8cwUBAQD3AQ";
+// Mock blob IDs for testing (one per post)
+const MOCK_BLOB_IDS = [
+  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBAQA8Ag",
+  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBPAJkAg",
+  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBZAJmAg",
+  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBZgJzAg",
+  "ZpybC85My9t2vJz8-J61wR5OUZI1v36ma-zQPzo8cwUBAQD3AQ",
+];
 
 async function createPosts() {
   console.log('🚀 Creating posts on Sui testnet...\n');
@@ -41,7 +47,7 @@ async function createPosts() {
       target: `${PACKAGE_ID}::posts::create_post`,
       arguments: [
         tx.pure.string(caption),
-        tx.pure.string(MOCK_BLOB_ID),
+        tx.pure.string(MOCK_BLOB_IDS[index]),
         tx.object.clock(),
       ],
     });
