@@ -40,7 +40,7 @@ jobs:
           DIST: frontend/dist
           SUI_NETWORK: mainnet
           EPOCHS: 53
-          # WS_RESOURCES: ws-resources.json
+          WS_RESOURCES: ws-resources.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit updated ws-resources.json
