@@ -1,51 +1,40 @@
-import { Card, Flex, Text, Button, Slider, Box } from '@radix-ui/themes';
-import { useState, useEffect } from 'react';
+import { Card, Flex, Text, Button, Box } from '@radix-ui/themes';
+import { usePayForContent } from '../hooks/usePayForContent';
 
 interface PaymentPopoverProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (amount: number) => void;
-  minAmount?: number;
-  maxAmount?: number;
-  defaultAmount?: number;
   title: string;
-  userBalance: number;
+  postId: string;
 }
 
 export function PaymentPopover({
   isOpen,
   onClose,
-  onConfirm,
-  minAmount = 1,
-  maxAmount = 100,
-  defaultAmount,
   title,
-  userBalance,
+  postId,
 }: PaymentPopoverProps) {
-  const [amount, setAmount] = useState<number>(defaultAmount || minAmount);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setAmount(defaultAmount || minAmount);
-    }
-  }, [isOpen, defaultAmount, minAmount]);
+  const { payForContent, isPending } = usePayForContent();
 
   if (!isOpen) {
     return null;
   }
 
-  const hasInsufficientBalance = amount > userBalance;
-
-  const handleConfirm = async () => {
-    if (hasInsufficientBalance) return;
-
-    setIsProcessing(true);
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onConfirm(amount);
-    setIsProcessing(false);
-    onClose();
+  const handleConfirm = () => {
+    payForContent(
+      { postId },
+      {
+        onSuccess: (viewerTokenId) => {
+          console.log('Access granted! ViewerToken:', viewerTokenId);
+          onClose();
+          // ViewerTokens query will auto-refetch, paywall will disappear
+        },
+        onError: (error) => {
+          console.error('Access request failed:', error);
+          alert(`Failed to unlock content: ${error.message}`);
+        },
+      }
+    );
   };
 
   return (
@@ -79,77 +68,41 @@ export function PaymentPopover({
         onClick={(e) => e.stopPropagation()}
       >
         <Flex direction="column" gap="4" p="4">
-        {/* Title */}
-        <Text size="4" weight="bold">
-          {title}
-        </Text>
-
-        {/* Balance Display */}
-        <Flex justify="between" align="center">
-          <Text size="2" color="gray">
-            Your Balance:
+          {/* Title */}
+          <Text size="4" weight="bold">
+            {title}
           </Text>
-          <Text size="3" weight="bold" style={{ color: 'var(--green-9)' }}>
-            ${userBalance.toFixed(2)}
-          </Text>
-        </Flex>
 
-        {/* Amount Display */}
-        <Flex direction="column" gap="2">
-          <Flex justify="between" align="center">
-            <Text size="2" color="gray">
-              Amount:
+          {/* Demo Disclaimer */}
+          <Flex direction="column" gap="3" py="2">
+            <Text size="3" weight="medium" align="center">
+              🆓 Free Demo Access
             </Text>
-            <Text size="5" weight="bold">
-              ${amount.toFixed(2)}
+            <Text size="2" color="gray" align="center" style={{ lineHeight: '1.5' }}>
+              For demonstration purposes, this content is free to access.
+              In production, creators would set their own fees, and 100% of those
+              fees would go directly to the creator.
             </Text>
           </Flex>
 
-          {/* Slider */}
-          <Slider
-            value={[amount]}
-            onValueChange={(values) => setAmount(values[0])}
-            min={minAmount}
-            max={maxAmount}
-            step={1}
-            disabled={isProcessing}
-          />
-
-          <Flex justify="between">
-            <Text size="1" color="gray">
-              ${minAmount}
-            </Text>
-            <Text size="1" color="gray">
-              ${maxAmount}
-            </Text>
+          {/* Buttons */}
+          <Flex gap="2" justify="end">
+            <Button
+              variant="soft"
+              onClick={onClose}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              onClick={handleConfirm}
+              disabled={isPending}
+            >
+              {isPending ? 'Processing...' : 'Confirm Access'}
+            </Button>
           </Flex>
         </Flex>
-
-        {/* Insufficient Balance Warning */}
-        {hasInsufficientBalance && (
-          <Text size="2" color="red">
-            Insufficient balance. You need ${(amount - userBalance).toFixed(2)} more.
-          </Text>
-        )}
-
-        {/* Buttons */}
-        <Flex gap="2" justify="end">
-          <Button
-            variant="soft"
-            onClick={onClose}
-            disabled={isProcessing}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="solid"
-            onClick={handleConfirm}
-            disabled={isProcessing || hasInsufficientBalance}
-          >
-            {isProcessing ? 'Processing...' : 'Confirm Payment'}
-          </Button>
-        </Flex>
-      </Flex>
     </Card>
     </>
   );

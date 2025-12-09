@@ -6,11 +6,17 @@ import { ProfileDropdown } from "./components/ProfileDropdown";
 import CreateUsernameModal from "./components/createUsernameModal";
 import { useUserSubname } from "./hooks/useUserSubname";
 import { Feed } from "./components/Feed";
+import { SessionExpirationModal } from "./components/SessionExpirationModal";
+import { useSessionKey } from "./providers/SessionKeyProvider";
 
 function App() {
   const currentAccount = useCurrentAccount();
   const { hasSubname, isLoading: isSubnameLoading } = useUserSubname();
   const [shouldCreateUsername, setShouldCreateUsername] = useState(false);
+  const [shouldShowSessionModal, setShouldShowSessionModal] = useState(false);
+  const { sessionKey, isInitializing } = useSessionKey();
+
+
 
   // Show username modal if user has no subnames
   useEffect(() => {
@@ -20,9 +26,20 @@ function App() {
     }
   }, [currentAccount, hasSubname, isSubnameLoading])
 
+  // Show session modal if user has subname but no session or expired session
+  useEffect(() => {
+    if (currentAccount && !isSubnameLoading && hasSubname && !isInitializing) {
+      const needsSession = !sessionKey || sessionKey.isExpired();
+      setShouldShowSessionModal(needsSession);
+    } else {
+      setShouldShowSessionModal(false);
+    }
+  }, [currentAccount, hasSubname, isSubnameLoading, sessionKey, isInitializing])
+
   return (
     <>
       <CreateUsernameModal isOpen={shouldCreateUsername} onClose={() => setShouldCreateUsername(false)} />
+      <SessionExpirationModal isOpen={shouldShowSessionModal} />
       <Flex
         position="sticky"
         px="4"

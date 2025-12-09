@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "create-posts": "tsx src/createPosts.ts"
+    "create-posts": "tsx src/createPosts.ts",
+    "encrypt-images": "tsx src/encryptImages.ts",
+    "create-encrypted-posts": "tsx src/createEncryptedPosts.ts"
   },
   "dependencies": {
+    "@mysten/seal": "^0.9.6",
     "@mysten/sui": "^1.45.2",
     "dotenv": "^16.4.5"
   },

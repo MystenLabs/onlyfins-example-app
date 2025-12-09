@@ -1,0 +1,22 @@
+[
+  {
+    "encryptedFile": "image_1.enc",
+    "encryptionId": "313736353332303831313539365f30",
+    "walrusBlobId": "mSmo70dbYLxD_fuMiRjO6esdewMV4VcdSVngakvVXqQBAQDfAA"
+  },
+  {
+    "encryptedFile": "image_2.enc",
+    "encryptionId": "313736353332303831323038385f31",
+    "walrusBlobId": "mSmo70dbYLxD_fuMiRjO6esdewMV4VcdSVngakvVXqQB3wA7Ag"
+  },
+  {
+    "encryptedFile": "image_3.enc",
+    "encryptionId": "313736353332303831323235325f32",
+    "walrusBlobId": "mSmo70dbYLxD_fuMiRjO6esdewMV4VcdSVngakvVXqQBOwJEAg"
+  },
+  {
+    "encryptedFile": "image_4.enc",
+    "encryptionId": "313736353332303831323338355f33",
+    "walrusBlobId": "mSmo70dbYLxD_fuMiRjO6esdewMV4VcdSVngakvVXqQBRAKMAg"
+  }
+]

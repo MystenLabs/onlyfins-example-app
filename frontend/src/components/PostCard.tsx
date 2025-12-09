@@ -6,18 +6,31 @@ import { useState } from 'react';
 import { PaywallOverlay } from './PaywallOverlay';
 import { PaymentPopover } from './PaymentPopover';
 
-export interface Post {
+interface BasePost {
   id: string;
   author: string;
-  text: string;
-  imageUrl?: string;
   timestamp: number;
+
   commentCount?: number;
   tipCount?: number;
   likeCount?: number;
-  isPaid?: boolean;
-  minPrice?: number;
 }
+
+export interface LockedPost extends BasePost {
+  kind: 'locked';
+  encryptedCaption: string;
+  encryptedImageUrl: string;
+  minPrice: number;
+  encryptionId: string;
+}
+
+export interface UnlockedPost extends BasePost {
+  kind: 'unlocked';
+  caption: string;
+  imageBytes: string; // or imageUrl, depending on your pipeline
+}
+
+export type Post = LockedPost | UnlockedPost;
 
 interface PostCardProps {
   post: Post;
@@ -27,8 +40,7 @@ export function PostCard({ post }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [tipCount, setTipCount] = useState(post.tipCount || 0);
-  const [userBalance, setUserBalance] = useState(100); // Mock balance
-  const [isUnlocked, setIsUnlocked] = useState(!post.isPaid);
+  const [userBalance, setUserBalance] = useState(100); // Mock balance (for tips only)
   const [showTipPopover, setShowTipPopover] = useState(false);
 
   const handleLike = () => {
@@ -55,15 +67,12 @@ export function PostCard({ post }: PostCardProps) {
     setShowTipPopover(false);
   };
 
-  const handleUnlock = (amount: number) => {
-    setUserBalance(prev => prev - amount);
-    setIsUnlocked(true);
-  };
-
   const handleShare = () => {
     console.log('Share clicked for post:', post.id);
     // TODO: Implement share functionality
   };
+
+  const isLocked = post.kind === 'locked';
 
   return (
     <Card>
@@ -81,21 +90,21 @@ export function PostCard({ post }: PostCardProps) {
         </Flex>
 
         {/* Post content area with optional paywall */}
-        <Box style={{ position: 'relative', minHeight: post.isPaid && !isUnlocked ? '150px' : 'auto' }}>
-          {/* Post text content */}
-          {post.text && (
-            <Box style={{ filter: post.isPaid && !isUnlocked ? 'blur(8px)' : 'none', pointerEvents: post.isPaid && !isUnlocked ? 'none' : 'auto' }}>
+        <Box style={{ position: 'relative', minHeight: isLocked ? '150px' : 'auto' }}>
+          {/* Post text content - only render when unlocked */}
+          {post.kind === 'unlocked' && post.caption && (
+            <Box>
               <Text size="3" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {post.text}
+                {post.caption}
               </Text>
             </Box>
           )}
 
-          {/* Optional image */}
-          {post.imageUrl && (
-            <Box mt={post.text ? '3' : '0'} style={{ filter: post.isPaid && !isUnlocked ? 'blur(20px)' : 'none', pointerEvents: post.isPaid && !isUnlocked ? 'none' : 'auto' }}>
+          {/* Optional image - only render when unlocked */}
+          {post.kind === 'unlocked' && post.imageBytes && (
+            <Box mt={post.caption ? '3' : '0'}>
               <img
-                src={post.imageUrl}
+                src={post.imageBytes}
                 alt="Post attachment"
                 style={{
                   width: '100%',
@@ -109,11 +118,9 @@ export function PostCard({ post }: PostCardProps) {
           )}
 
           {/* Paywall overlay */}
-          {post.isPaid && !isUnlocked && (
+          {isLocked && (
             <PaywallOverlay
-              minPrice={post.minPrice || 5}
-              userBalance={userBalance}
-              onUnlock={handleUnlock}
+              postId={post.id}
             />
           )}
         </Box>

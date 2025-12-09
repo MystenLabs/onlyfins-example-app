@@ -1,24 +1,23 @@
 import { Box, Flex, Text, Button } from '@radix-ui/themes';
 import { LockClosedIcon } from '@radix-ui/react-icons';
-import { PaymentPopover } from './PaymentPopover';
 import { useState } from 'react';
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { PaymentPopover } from './PaymentPopover';
 
 interface PaywallOverlayProps {
-  minPrice: number;
-  userBalance: number;
-  onUnlock: (amount: number) => void;
+  postId: string;
 }
 
-export function PaywallOverlay({ minPrice, userBalance, onUnlock }: PaywallOverlayProps) {
+export function PaywallOverlay({ postId }: PaywallOverlayProps) {
   const [showPaymentPopover, setShowPaymentPopover] = useState(false);
+  const currentAccount = useCurrentAccount();
 
   const handleUnlockClick = () => {
+    if (!currentAccount) {
+      alert('Please connect your wallet first');
+      return;
+    }
     setShowPaymentPopover(true);
-  };
-
-  const handlePaymentConfirm = (amount: number) => {
-    onUnlock(amount);
-    setShowPaymentPopover(false);
   };
 
   return (
@@ -65,18 +64,14 @@ export function PaywallOverlay({ minPrice, userBalance, onUnlock }: PaywallOverl
           onClick={handleUnlockClick}
           style={{ cursor: 'pointer' }}
         >
-          Unlock for ${minPrice}+
+          Unlock Content (Free Demo)
         </Button>
 
         <PaymentPopover
           isOpen={showPaymentPopover}
           onClose={() => setShowPaymentPopover(false)}
-          onConfirm={handlePaymentConfirm}
-          minAmount={minPrice}
-          maxAmount={50}
-          defaultAmount={minPrice}
           title="Unlock Content"
-          userBalance={userBalance}
+          postId={postId}
         />
       </Flex>
     </Box>

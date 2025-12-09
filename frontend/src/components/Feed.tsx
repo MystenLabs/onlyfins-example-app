@@ -1,9 +1,20 @@
 import { Flex, Text, Box, Button, Separator } from '@radix-ui/themes';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { PostCard, Post } from './PostCard';
-import { POST_ADDRESSES, WALRUS_AGGREGATOR_URL } from '../constants';
+import { POST_ADDRESSES } from '../constants';
+import { useViewerTokens } from '../hooks/useViewerTokens';
+import { usePostDecryption } from '../hooks/usePostDecryption';
+import { transformSuiObjectsToPosts } from '../utils/post-transform';
+import { useMemo } from 'react';
+import { useSessionKey } from '../providers/SessionKeyProvider';
 
 export function Feed() {
+  // Fetch ViewerTokens ONCE for all posts (optimization)
+  const { viewerTokens, isLoading: isLoadingTokens } = useViewerTokens();
+
+  // Get session key for decryption
+  const { sessionKey } = useSessionKey();
+
   // Fetch all posts from Sui using multiGetObjects
   const { data, isPending, isError, error, refetch } = useSuiClientQuery(
     'multiGetObjects',
@@ -12,30 +23,36 @@ export function Feed() {
       options: {
         showContent: true,
       },
+
+    },
+    {
+
     }
   );
 
   // Transform Sui objects into Post format
-  const posts: Post[] = data?.map((response) => {
-    if (!response.data) return null;
+  // Automatically re-computes when data or viewerTokens change
+  const posts: Post[] = useMemo(() => {
+    return transformSuiObjectsToPosts(data, viewerTokens);
+  }, [data, viewerTokens]);
 
-    const content = response.data.content;
-    if (content?.dataType !== 'moveObject') return null;
+  // Decrypt posts that user has access to
+  const decryptedContent = usePostDecryption(posts, data, sessionKey, viewerTokens);
 
-    const fields = content.fields as any;
-
-    return {
-      id: response.data.objectId,
-      author: fields.author,
-      text: fields.caption,
-      imageUrl: fields.image_blob_id ? `${WALRUS_AGGREGATOR_URL}/${fields.image_blob_id}` : undefined,
-      timestamp: Number(fields.created_at),
-      likeCount: 0,
-      commentCount: 0,
-      tipCount: 0,
-      isPaid: false,
-    };
-  }).filter((post): post is Post => post !== null) || [];
+  // Merge decrypted content into posts
+  const finalPosts: Post[] = useMemo(() => {
+    return posts.map((post) => {
+      const decrypted = decryptedContent[post.id];
+      if (decrypted && post.kind === 'unlocked') {
+        return {
+          ...post,
+          caption: decrypted.caption,
+          imageBytes: decrypted.imageBytes,
+        };
+      }
+      return post;
+    });
+  }, [posts, decryptedContent]);
 
   return (
     <Flex direction="column" gap="3">
@@ -79,17 +96,17 @@ export function Feed() {
         </Box>
       )}
 
-      {!isPending && !isError && posts.length > 0 && (
+      {!isPending && !isError && finalPosts.length > 0 && (
         <>
           <Flex direction="column" gap="3">
-            {posts.map((post) => (
+            {finalPosts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </Flex>
 
           <Separator size="4" />
           <Text size="1" color="gray">
-            {posts.length} post{posts.length !== 1 ? 's' : ''} loaded
+            {finalPosts.length} post{finalPosts.length !== 1 ? 's' : ''} loaded
           </Text>
         </>
       )}
