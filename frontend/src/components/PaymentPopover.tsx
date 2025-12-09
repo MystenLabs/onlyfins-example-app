@@ -93,16 +93,6 @@ export function PaymentPopover({
             </Flex>
           )}
 
-          {/* Loading State */}
-          {mutation.isPending && (
-            <Flex align="center" justify="center" gap="2" py="2">
-              <Spinner size="2" />
-              <Text size="2" color="gray">
-                Processing your request...
-              </Text>
-            </Flex>
-          )}
-
           {/* Buttons */}
           <Flex gap="2" justify="end">
             <Button
