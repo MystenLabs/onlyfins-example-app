@@ -38,7 +38,7 @@ export function useViewerTokens() {
   const viewerTokens: ViewerToken[] = data?.data
     ?.filter((obj) => obj.data?.content?.dataType === 'moveObject')
     .map((obj) => {
-      const fields = obj.data!.content!.fields as any;
+      const fields = (obj as any).data!.content!.fields as any;
       return {
         objectId: obj.data!.objectId,
         postId: fields.post_id as string,

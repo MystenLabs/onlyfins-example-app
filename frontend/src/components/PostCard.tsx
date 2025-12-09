@@ -4,7 +4,6 @@ import { AddressDisplay } from './AddressDisplay';
 import { formatTimestamp } from '../utils/formatters';
 import { useState } from 'react';
 import { PaywallOverlay } from './PaywallOverlay';
-import { PaymentPopover } from './PaymentPopover';
 
 interface BasePost {
   id: string;
@@ -39,9 +38,6 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
-  const [tipCount, setTipCount] = useState(post.tipCount || 0);
-  const [userBalance, setUserBalance] = useState(100); // Mock balance (for tips only)
-  const [showTipPopover, setShowTipPopover] = useState(false);
 
   const handleLike = () => {
     if (isLiked) {
@@ -55,16 +51,6 @@ export function PostCard({ post }: PostCardProps) {
   const handleComment = () => {
     console.log('Comment clicked for post:', post.id);
     // TODO: Implement comment functionality
-  };
-
-  const handleTip = () => {
-    setShowTipPopover(true);
-  };
-
-  const handleTipConfirm = (amount: number) => {
-    setUserBalance(prev => prev - amount);
-    setTipCount(prev => prev + 1);
-    setShowTipPopover(false);
   };
 
   const handleShare = () => {
@@ -163,35 +149,6 @@ export function PostCard({ post }: PostCardProps) {
               </Text>
             )}
           </Flex>
-
-          <Box style={{ position: 'relative' }}>
-            <Flex align="center" gap="1">
-              <IconButton
-                size="2"
-                variant="ghost"
-                onClick={handleTip}
-                style={{ cursor: 'pointer' }}
-              >
-                <Text size="2" weight="bold">$</Text>
-              </IconButton>
-              {tipCount > 0 && (
-                <Text size="2" color="gray">
-                  {tipCount}
-                </Text>
-              )}
-            </Flex>
-
-            <PaymentPopover
-              isOpen={showTipPopover}
-              onClose={() => setShowTipPopover(false)}
-              onConfirm={handleTipConfirm}
-              minAmount={1}
-              maxAmount={100}
-              defaultAmount={5}
-              title="Send Tip"
-              userBalance={userBalance}
-            />
-          </Box>
 
           <Box style={{ marginLeft: 'auto' }}>
             <IconButton

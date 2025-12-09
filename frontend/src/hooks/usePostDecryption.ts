@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { SessionKey } from '@mysten/seal';
 import { Transaction } from '@mysten/sui/transactions';
-import { fromHex, fromHEX } from '@mysten/sui/utils';
+import { fromHex } from '@mysten/sui/utils';
 import { SuiObjectResponse } from '@mysten/sui/client';
 import { Post } from '../components/PostCard';
 import { ViewerToken } from './useViewerTokens';
 import { createSealClient, suiClient } from '../lib/seal-client';
-import { fetchFromWalrus } from '../utils/walrus-fetch';
-import { POSTS_PACKAGE_ID, WALRUS_AGGREGATOR_URL } from '../constants';
+import { POSTS_PACKAGE_ID } from '../constants';
 
 interface DecryptedContent {
   caption: string;

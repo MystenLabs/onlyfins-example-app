@@ -10,7 +10,7 @@ import { useSessionKey } from '../providers/SessionKeyProvider';
 
 export function Feed() {
   // Fetch ViewerTokens ONCE for all posts (optimization)
-  const { viewerTokens, isLoading: isLoadingTokens } = useViewerTokens();
+  const { viewerTokens } = useViewerTokens();
 
   // Get session key for decryption
   const { sessionKey } = useSessionKey();
