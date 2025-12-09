@@ -1,0 +1,7 @@
+{
+  "routes": {
+    "/*": "/index.html"
+  },
+  "site_name": "OnlyFins Example App",
+  "object_id": "0x3175b9ed4de4bc2036da7889f10941decee25b44238019adad6e0625b970b1f1"
+}
