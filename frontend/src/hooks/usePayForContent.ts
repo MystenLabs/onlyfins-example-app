@@ -1,6 +1,6 @@
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { POSTS_PACKAGE_ID } from '../constants';
 import { useSponsoredTransaction } from './useSponsoredTransaction';
 
@@ -22,19 +22,12 @@ export function usePayForContent() {
   const currentAccount = useCurrentAccount();
   const queryClient = useQueryClient();
 
-  const payForContent = async (
-    params: PayForContentParams,
-    options?: {
-      onSuccess?: (viewerTokenId: string) => void;
-      onError?: (error: Error) => void;
-    }
-  ) => {
-    if (!currentAccount?.address) {
-      options?.onError?.(new Error('No wallet connected'));
-      return;
-    }
+  const mutation = useMutation({
+    mutationFn: async (params: PayForContentParams): Promise<string> => {
+      if (!currentAccount?.address) {
+        throw new Error('No wallet connected');
+      }
 
-    try {
       const tx = new Transaction();
 
       // Call grant_access function - this RETURNS the ViewerToken (no payment required)
@@ -71,24 +64,24 @@ export function usePayForContent() {
           change.objectType.includes('::posts::ViewerToken')
       );
 
+      if (viewerTokenObj && viewerTokenObj.type === 'created') {
+        return viewerTokenObj.objectId;
+      }
+
+      return '';  // Success but no object ID found
+    },
+    onSuccess: () => {
       // Invalidate ViewerTokens query to trigger refetch
       // This will cause all PostCards to re-check access
+      // Use predicate to match useSuiClientQuery's key structure: [network, method, params]
       queryClient.invalidateQueries({
-        queryKey: ['getOwnedObjects', { owner: currentAccount.address }]
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[1] === 'getOwnedObjects' &&
+          (query.queryKey[2] as any)?.owner === currentAccount?.address,
       });
+    },
+  });
 
-      if (viewerTokenObj && viewerTokenObj.type === 'created') {
-        options?.onSuccess?.(viewerTokenObj.objectId);
-      } else {
-        options?.onSuccess?.('');  // Success but no object ID found
-      }
-    } catch (error) {
-      console.error('Error requesting access to content:', error);
-      options?.onError?.(error as Error);
-    }
-  };
-
-  return {
-    payForContent,
-  };
+  return mutation;
 }

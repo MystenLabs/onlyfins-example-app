@@ -1,4 +1,4 @@
-import { Card, Flex, Text, Button, Box } from '@radix-ui/themes';
+import { Card, Flex, Text, Button, Box, Spinner } from '@radix-ui/themes';
 import { usePayForContent } from '../hooks/usePayForContent';
 
 interface PaymentPopoverProps {
@@ -14,14 +14,14 @@ export function PaymentPopover({
   title,
   postId,
 }: PaymentPopoverProps) {
-  const { payForContent, isPending } = usePayForContent();
+  const mutation = usePayForContent();
 
   if (!isOpen) {
     return null;
   }
 
   const handleConfirm = () => {
-    payForContent(
+    mutation.mutate(
       { postId },
       {
         onSuccess: (viewerTokenId) => {
@@ -31,7 +31,6 @@ export function PaymentPopover({
         },
         onError: (error) => {
           console.error('Access request failed:', error);
-          alert(`Failed to unlock content: ${error.message}`);
         },
       }
     );
@@ -50,7 +49,7 @@ export function PaymentPopover({
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 999,
         }}
-        onClick={onClose}
+        onClick={mutation.isPending ? undefined : onClose}
       />
 
       {/* Payment Card */}
@@ -85,21 +84,41 @@ export function PaymentPopover({
             </Text>
           </Flex>
 
+          {/* Error State */}
+          {mutation.isError && (
+            <Flex direction="column" gap="2" py="2">
+              <Text size="2" color="red" align="center">
+                {mutation.error instanceof Error ? mutation.error.message : 'Failed to unlock content'}
+              </Text>
+            </Flex>
+          )}
+
+          {/* Loading State */}
+          {mutation.isPending && (
+            <Flex align="center" justify="center" gap="2" py="2">
+              <Spinner size="2" />
+              <Text size="2" color="gray">
+                Processing your request...
+              </Text>
+            </Flex>
+          )}
+
           {/* Buttons */}
           <Flex gap="2" justify="end">
             <Button
               variant="soft"
               onClick={onClose}
-              disabled={isPending}
+              disabled={mutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="solid"
               onClick={handleConfirm}
-              disabled={isPending}
+              disabled={mutation.isPending}
             >
-              {isPending ? 'Processing...' : 'Confirm Access'}
+              {mutation.isPending && <Spinner size="1" style={{ marginRight: '8px' }} />}
+              {mutation.isPending ? 'Processing...' : 'Confirm Access'}
             </Button>
           </Flex>
         </Flex>
