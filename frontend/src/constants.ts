@@ -3,14 +3,14 @@ export const TESTNET_COUNTER_PACKAGE_ID = "0xTODO";
 export const MAINNET_COUNTER_PACKAGE_ID = "0xTODO";
 
 // Posts package ID (deployed on testnet)
-export const POSTS_PACKAGE_ID = "0xbbf70f81f9cea7bef0f137b515da122bb6a312555765a34e9257302044116682";  // Update this after deploying the Move contract
+export const POSTS_PACKAGE_ID = "0xbad4f863e82cee07a6176828f60ab933feb0748ad783a51c748cd9e6dc70aaef";  // Update this after deploying the Move contract
 
 // Hardcoded post addresses for demo
 export const POST_ADDRESSES = [
-  "0x3f4e649e1673e44c61ca32b00bf1a2daf47cee1a1ee7e20ed9d527eb8b17df6c",
-  "0x5971395f23cae1950924a7e6a61c4eecb706ab9c0900600512cc81976409bbd5",
-  "0x6c309f8925f2cb0d6717b9f130faa174cddf3188ffab51d371c41dc377096266",
-  "0xc5a98b842374c54b146631454e5ca98f480bedd6d8c6d7d945001dde39058bf8",
+  "0x43dca7c7f4977c7b4834d6c6febab5ca065b787a521962a32dbfa12879b05408",
+  "0x5adbb7f60408829412f5be55ef9283cc5ddaa22ed5c3444bbcb9face39da79dc",
+  "0x84df7060ebc7a89d5a4ae09b7c1421e2c00178fa3a508326bb0fa5e8983195f4",
+  "0x94377b759e76a962807923403c4fd80988cbf7f1c8f53e62a055416a56fd6522",
 ];
 
 // Walrus aggregator URL for fetching images

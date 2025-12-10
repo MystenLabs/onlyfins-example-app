@@ -108,6 +108,8 @@ async function main() {
     const caption = MOCK_CAPTIONS[i];
     const { encryptionId, walrusBlobId } = encryptionData[i];
 
+    console.log('encryptionId', encryptionId)
+
     console.log(`📝 Post ${i + 1}:`);
     console.log(`   Caption: "${caption}"`);
     console.log(`   Walrus Blob ID: ${walrusBlobId}`);

@@ -6,7 +6,8 @@ import { SuiObjectResponse } from '@mysten/sui/client';
 import { Post } from '../components/PostCard';
 import { ViewerToken } from './useViewerTokens';
 import { createSealClient, suiClient } from '../lib/seal-client';
-import { POSTS_PACKAGE_ID } from '../constants';
+import { POSTS_PACKAGE_ID, WALRUS_AGGREGATOR_URL } from '../constants';
+import { fetchFromWalrus } from '../utils/walrus-fetch';
 
 interface DecryptedContent {
   caption: string;
@@ -126,44 +127,45 @@ export function usePostDecryption(
         }));
         
 
-        // // 2. Decrypt image (stored off-chain in Walrus)
-        // await sealClient.fetchKeys({
-        //   ids: [encryptionId],
-        //   txBytes: txBytes,
-        //   sessionKey,
-        //   threshold: 1,
-        // });
+        // 2. Decrypt image (stored off-chain in Walrus)
+        await sealClient.fetchKeys({
+          ids: [encryptionId],
+          txBytes: txBytes,
+          sessionKey,
+          threshold: 1,
+        });
 
-        // const imageBlobId = fields.image_blob_id;
-        // const walrusUrl = `${WALRUS_AGGREGATOR_URL}/${imageBlobId}`;
-        // console.log(`Fetching encrypted image from Walrus: ${walrusUrl}`);
+        const imageBlobId = fields.image_blob_id;
+        console.log('imageBlobId', imageBlobId)
+        const walrusUrl = `${WALRUS_AGGREGATOR_URL}/${imageBlobId}`;
+        console.log(`Fetching encrypted image from Walrus: ${walrusUrl}`);
 
-        // const encryptedImage = await fetchFromWalrus(walrusUrl);
-        // console.log(`Decrypting image for post ${post.id}, size: ${encryptedImage.length} bytes`);
+        const encryptedImage = await fetchFromWalrus(walrusUrl);
+        console.log(`Decrypting image for post ${post.id}, size: ${encryptedImage.length} bytes`);
 
-        // const decryptedImageBytes = await sealClient.decrypt({
-        //   data: encryptedImage,
-        //   sessionKey,
-        //   txBytes,
-        //   checkShareConsistency: false,
-        // });
+        const decryptedImageBytes = await sealClient.decrypt({
+          data: encryptedImage,
+          sessionKey,
+          txBytes,
+          checkShareConsistency: false,
+        });
 
-        // // Convert decrypted image to blob URL (detect MIME type from byte signature)
-        // const imageBytes = new Uint8Array(decryptedImageBytes);
-        // const mimeType = imageBytes[0] === 0x89 && imageBytes[1] === 0x50 ? 'image/png' : 'image/jpeg';
-        // const imageBlob = new Blob([imageBytes], { type: mimeType });
-        // const imageUrl = URL.createObjectURL(imageBlob);
-        // console.log(`Image decrypted successfully: ${imageUrl}`);
+        // Convert decrypted image to blob URL (detect MIME type from byte signature)
+        const imageBytes = new Uint8Array(decryptedImageBytes);
+        const mimeType = imageBytes[0] === 0x89 && imageBytes[1] === 0x50 ? 'image/png' : 'image/jpeg';
+        const imageBlob = new Blob([imageBytes], { type: mimeType });
+        const imageUrl = URL.createObjectURL(imageBlob);
+        console.log(`Image decrypted successfully: ${imageUrl}`);
 
-        // // Update with full decrypted content
-        // setDecryptedContent((prev) => ({
-        //   ...prev,
-        //   [post.id]: {
-        //     caption: decryptedCaption,
-        //     imageBytes: imageUrl,
-        //     isDecrypting: false,
-        //   },
-        // }));
+        // Update with full decrypted content
+        setDecryptedContent((prev) => ({
+          ...prev,
+          [post.id]: {
+            caption: decryptedCaption,
+            imageBytes: imageUrl,
+            isDecrypting: false,
+          },
+        }));
 
         // Remove from decrypting set
         setDecryptingPosts((prev) => {
