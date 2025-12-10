@@ -1,4 +1,4 @@
-import { Card, Flex, Text, Box, IconButton, Separator } from '@radix-ui/themes';
+import { Card, Flex, Text, Box, IconButton, Separator, Spinner } from '@radix-ui/themes';
 import { ChatBubbleIcon, Share1Icon, HeartIcon } from '@radix-ui/react-icons';
 import { AddressDisplay } from './AddressDisplay';
 import { formatTimestamp } from '../utils/formatters';
@@ -59,6 +59,8 @@ export function PostCard({ post }: PostCardProps) {
   };
 
   const isLocked = post.kind === 'locked';
+  const isDecrypting = post.kind === 'unlocked' && post.imageBytes &&
+    (post.imageBytes.includes('Decrypting') || post.imageBytes.includes('⏳'));
 
   return (
     <Card>
@@ -85,9 +87,9 @@ export function PostCard({ post }: PostCardProps) {
         )}
 
         {/* Post image area with optional paywall */}
-        <Box style={{ position: 'relative', minHeight: isLocked ? '200px' : 'auto' }}>
-          {/* Image - only render when unlocked */}
-          {post.kind === 'unlocked' && post.imageBytes && (
+        <Box style={{ position: 'relative', minHeight: isLocked || isDecrypting ? '200px' : 'auto' }}>
+          {/* Image - only render when unlocked and fully decrypted */}
+          {post.kind === 'unlocked' && post.imageBytes && !isDecrypting && (
             <Box mt={post.caption ? '3' : '0'}>
               <img
                 src={post.imageBytes}
@@ -100,6 +102,30 @@ export function PostCard({ post }: PostCardProps) {
                   border: '1px solid var(--gray-a3)',
                 }}
               />
+            </Box>
+          )}
+
+          {/* Decryption loading indicator */}
+          {isDecrypting && (
+            <Box
+              mt={post.caption ? '3' : '0'}
+              style={{
+                width: '100%',
+                minHeight: '200px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'var(--gray-a2)',
+                borderRadius: 'var(--radius-3)',
+                border: '1px solid var(--gray-a3)',
+              }}
+            >
+              <Flex direction="column" gap="2" align="center">
+                <Spinner size="3" />
+                <Text size="2" color="gray">
+                  Decrypting image...
+                </Text>
+              </Flex>
             </Box>
           )}
 

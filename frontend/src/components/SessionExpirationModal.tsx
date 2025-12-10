@@ -45,14 +45,14 @@ export function SessionExpirationModal({ isOpen }: SessionExpirationModalProps) 
             </Heading>
 
             <Text size="3">
-              The SDK uses Seal for encrypting messages and attachments. 
+              This app uses Seal for access control of premium post content. 
               The Seal SDK requires a session key, which contains a signature from your account and allows 
               the app to retrieve Seal decryption keys for a limited time (30 minutes) without requiring 
-              repeated confirmations for each message.
+              repeated confirmations for each post.
             </Text>
 
             <Text size="2" color="gray">
-              Please sign a new session key to continue using the messaging features.
+              Please sign a new session key to continue using the app.
             </Text>
 
             <Flex gap="2" justify="end">
