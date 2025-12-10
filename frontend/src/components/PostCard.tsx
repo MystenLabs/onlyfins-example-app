@@ -17,7 +17,7 @@ interface BasePost {
 
 export interface LockedPost extends BasePost {
   kind: 'locked';
-  encryptedCaption: string;
+  caption: string; // Caption is now public, not encrypted
   encryptedImageUrl: string;
   minPrice: number;
   encryptionId: string;
@@ -75,18 +75,18 @@ export function PostCard({ post }: PostCardProps) {
           </Flex>
         </Flex>
 
-        {/* Post content area with optional paywall */}
-        <Box style={{ position: 'relative', minHeight: isLocked ? '150px' : 'auto' }}>
-          {/* Post text content - only render when unlocked */}
-          {post.kind === 'unlocked' && post.caption && (
-            <Box>
-              <Text size="3" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {post.caption}
-              </Text>
-            </Box>
-          )}
+        {/* Post caption - always visible (public) */}
+        {post.caption && (
+          <Box>
+            <Text size="3" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {post.caption}
+            </Text>
+          </Box>
+        )}
 
-          {/* Optional image - only render when unlocked */}
+        {/* Post image area with optional paywall */}
+        <Box style={{ position: 'relative', minHeight: isLocked ? '200px' : 'auto' }}>
+          {/* Image - only render when unlocked */}
           {post.kind === 'unlocked' && post.imageBytes && (
             <Box mt={post.caption ? '3' : '0'}>
               <img
@@ -103,7 +103,7 @@ export function PostCard({ post }: PostCardProps) {
             </Box>
           )}
 
-          {/* Paywall overlay */}
+          {/* Paywall overlay - only covers image area */}
           {isLocked && (
             <PaywallOverlay
               postId={post.id}

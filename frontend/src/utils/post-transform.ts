@@ -11,14 +11,6 @@ function hasAccessToPost(postId: string, viewerTokens: ViewerToken[]): boolean {
 }
 
 /**
- * Helper: Decode UTF-8 bytes to string
- */
-function decodeBytesToString(bytes: number[]): string {
-  const uint8Array = new Uint8Array(bytes);
-  return new TextDecoder().decode(uint8Array);
-}
-
-/**
  * Helper: Convert encryption ID bytes to hex string
  */
 function bytesToHex(bytes: number[]): string {
@@ -31,9 +23,9 @@ function bytesToHex(bytes: number[]): string {
  * Transform Sui blockchain objects into typed Post objects.
  *
  * Post rendering logic:
- * 1. Not encrypted → UnlockedPost (public content)
- * 2. Encrypted + no ViewerToken → LockedPost (paywall)
- * 3. Encrypted + has ViewerToken → UnlockedPost (needs decryption - placeholder content)
+ * 1. Not encrypted → UnlockedPost (public caption + image)
+ * 2. Encrypted + no ViewerToken → LockedPost (public caption, locked image)
+ * 3. Encrypted + has ViewerToken → UnlockedPost (public caption, needs image decryption)
  *
  * @param suiData - Raw Sui object responses from multiGetObjects
  * @param viewerTokens - User's ViewerTokens (proof of purchase)
@@ -55,7 +47,10 @@ export function transformSuiObjectsToPosts(
       const fields = content.fields as any;
       const postId = response.data.objectId;
 
-      // Check if post is encrypted by checking encryption_id field
+      // Caption is always plaintext now (String field)
+      const caption = fields.caption as string;
+
+      // Check if post image is encrypted by checking encryption_id field
       const isEncrypted = fields.encryption_id && Array.isArray(fields.encryption_id) && fields.encryption_id.length > 0;
 
       // Check if user has access (owns a ViewerToken for this post)
@@ -71,12 +66,11 @@ export function transformSuiObjectsToPosts(
         likeCount: 0,
       };
 
-      // Convert fee from MIST to SUI
-      const feeSui = Number(fields.fee_mist) / 1_000_000_000;
+      // Convert fee from MIST to SUI (if fee field exists)
+      const feeSui = fields.fee_mist ? Number(fields.fee_mist) / 1_000_000_000 : 0;
 
-      // Case 1: Not encrypted → Public post (unlocked)
+      // Case 1: Not encrypted → Public post (caption + image both public)
       if (!isEncrypted) {
-        const caption = decodeBytesToString(fields.caption);
         const imageBytes = fields.image_blob_id
           ? `${WALRUS_AGGREGATOR_URL}/${fields.image_blob_id}`
           : '';
@@ -89,30 +83,28 @@ export function transformSuiObjectsToPosts(
         } as UnlockedPost;
       }
 
-      // Case 2: Encrypted + No access → Locked post (paywall)
+      // Case 2: Encrypted + No access → Locked post (caption public, image locked)
       if (!userHasAccess) {
         const encryptionId = bytesToHex(fields.encryption_id);
 
         return {
           kind: 'locked',
-          encryptedCaption: '🔒 Encrypted content - unlock to view',
-          encryptedImageUrl: '', // Placeholder for locked content
+          caption, // Caption is now public
+          encryptedImageUrl: '', // Placeholder for locked image
           minPrice: feeSui,
           encryptionId,
           ...baseFields,
         } as LockedPost;
       }
 
-      // Case 3: Encrypted + Has access → Unlocked but needs decryption
-      // TODO: Integrate with Seal SDK to decrypt caption and image
-      // For now, show placeholder content until decryption logic is added
+      // Case 3: Encrypted + Has access → Unlocked but needs image decryption
       const encryptionId = bytesToHex(fields.encryption_id);
 
       return {
         kind: 'unlocked',
-        caption: '⏳ Decrypting content...', // TODO: Replace with actual decrypted caption
-        imageBytes: '', // TODO: Replace with decrypted image blob URL
-        encryptionId, // Store for future Seal decryption
+        caption, // Caption is always public
+        imageBytes: '', // Will be filled by usePostDecryption
+        encryptionId, // Store for Seal decryption
         ...baseFields,
       } as UnlockedPost;
     })

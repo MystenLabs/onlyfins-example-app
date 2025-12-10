@@ -39,14 +39,13 @@ export function Feed() {
   // Decrypt posts that user has access to
   const decryptedContent = usePostDecryption(posts, data, sessionKey, viewerTokens);
 
-  // Merge decrypted content into posts
+  // Merge decrypted images into posts (captions are already public)
   const finalPosts: Post[] = useMemo(() => {
     return posts.map((post) => {
       const decrypted = decryptedContent[post.id];
       if (decrypted && post.kind === 'unlocked') {
         return {
           ...post,
-          caption: decrypted.caption,
           imageBytes: decrypted.imageBytes,
         };
       }

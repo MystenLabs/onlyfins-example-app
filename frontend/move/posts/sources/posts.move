@@ -12,7 +12,7 @@ module posts::posts {
     public struct Post has key {
         id: UID,
         author: address,
-        caption: vector<u8>,
+        caption: String,
         image_blob_id: String,
         created_at: u64,
         encryption_id: Option<vector<u8>>
@@ -25,16 +25,16 @@ module posts::posts {
 
     /// Create and share a Post object
     public fun create_post(
-        caption: vector<u8>,          
+        caption: String,
         image_blob_id: String,
-        encryption_id: Option<vector<u8>>,     
+        encryption_id: Option<vector<u8>>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
         let post = Post {
             id: object::new(ctx),
-            author: ctx.sender(),               
-            caption,                   
+            author: ctx.sender(),
+            caption,
             image_blob_id,
             created_at: clock.timestamp_ms(),
             encryption_id,

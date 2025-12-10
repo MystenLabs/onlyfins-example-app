@@ -1,0 +1,16 @@
+[
+  {
+    "postIndex": 2,
+    "imageFile": "seal-walrus.jpeg",
+    "encryptedFile": "encrypted_2.enc",
+    "encryptionId": "313736353430303831383231395f32",
+    "walrusBlobId": "trS0JFtfXao2G-HlEQrAyqMnjwVYV209-JollQ5jlzkBPQJUAg"
+  },
+  {
+    "postIndex": 4,
+    "imageFile": "walrus-real.jpeg",
+    "encryptedFile": "encrypted_4.enc",
+    "encryptionId": "313736353430303831383736335f34",
+    "walrusBlobId": "trS0JFtfXao2G-HlEQrAyqMnjwVYV209-JollQ5jlzkBVAJnAg"
+  }
+]

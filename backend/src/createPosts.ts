@@ -1,93 +1,239 @@
 import { SuiClient } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { fromHex } from '@mysten/sui/utils';
-import { PACKAGE_ID, SUI_RPC_URL, CLOCK_OBJECT_ID, POSTER_PRIVATE_KEY } from './config.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { PACKAGE_ID, SUI_RPC_URL, CLOCK_OBJECT_ID, getKeypair } from './config.js';
+import { POSTS } from './postData.js';
 
-// Mock captions for test posts
-const MOCK_CAPTIONS = [
-  "Just deployed my first smart contract on Sui! The developer experience is amazing. 🚀",
-  "GM everyone! What are you building today?",
-  "The speed of Sui transactions is mind-blowing. Sub-second finality FTW!",
-  "Excited to share my new dApp built on Sui. Check it out!",
-  "Learning Move has been such a rewarding experience. The type safety is incredible.",
-];
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Mock blob IDs for testing (one per post)
-const MOCK_BLOB_IDS = [
-  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBAQA8Ag",
-  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBPAJkAg",
-  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBZAJmAg",
-  "LWJSa7GGY4mUVxkYJDRIBnPlsBmUAV0uE00n2JGGWskBZgJzAg",
-  "ZpybC85My9t2vJz8-J61wR5OUZI1v36ma-zQPzo8cwUBAQD3AQ",
-];
+interface EncryptedImageData {
+  postIndex: number;
+  imageFile: string;
+  encryptedFile: string;
+  encryptionId: string;
+  walrusBlobId: string;
+}
 
-async function createPosts() {
+interface UnencryptedImageData {
+  postIndex: number;
+  imageFile: string;
+  walrusBlobId: string;
+}
+
+interface PostWithBlobId {
+  postIndex: number;
+  author: number;
+  caption: string;
+  blobId: string;
+  encryptionId: string | null;
+}
+
+async function main() {
   console.log('🚀 Creating posts on Sui testnet...\n');
+
+  if (!PACKAGE_ID || PACKAGE_ID === '0x0') {
+    console.error('❌ Error: PACKAGE_ID must be set in .env');
+    process.exit(1);
+  }
+
+  console.log('📋 Configuration:');
+  console.log(`   Package ID: ${PACKAGE_ID}`);
+  console.log(`   Total posts: ${POSTS.length}\n`);
+
+  // Read blob ID mappings
+  const encryptedDir = path.join(__dirname, '..', 'encrypted');
+
+  let encryptedImagesData: EncryptedImageData[] = [];
+  let unencryptedImagesData: UnencryptedImageData[] = [];
+
+  try {
+    const encryptedContent = await fs.readFile(
+      path.join(encryptedDir, 'encrypted-images.json'),
+      'utf-8'
+    );
+    encryptedImagesData = JSON.parse(encryptedContent);
+  } catch (error) {
+    console.log('ℹ️  No encrypted-images.json found (no encrypted posts)');
+  }
+
+  try {
+    const unencryptedContent = await fs.readFile(
+      path.join(encryptedDir, 'unencrypted-images.json'),
+      'utf-8'
+    );
+    unencryptedImagesData = JSON.parse(unencryptedContent);
+  } catch (error) {
+    console.log('ℹ️  No unencrypted-images.json found (no unencrypted posts)');
+  }
+
+  // Validate blob IDs are filled in
+  const missingEncryptedBlobs = encryptedImagesData.filter(
+    (item) => item.walrusBlobId === 'PASTE_BLOB_ID_HERE'
+  );
+  const missingUnencryptedBlobs = unencryptedImagesData.filter(
+    (item) => item.walrusBlobId === 'PASTE_BLOB_ID_HERE'
+  );
+
+  if (missingEncryptedBlobs.length > 0 || missingUnencryptedBlobs.length > 0) {
+    console.error('❌ Error: Please fill in all Walrus blob IDs\n');
+    if (missingEncryptedBlobs.length > 0) {
+      console.error('   Missing blob IDs in encrypted-images.json:');
+      missingEncryptedBlobs.forEach((item) => {
+        console.error(`      Post ${item.postIndex}: ${item.imageFile}`);
+      });
+    }
+    if (missingUnencryptedBlobs.length > 0) {
+      console.error('   Missing blob IDs in unencrypted-images.json:');
+      missingUnencryptedBlobs.forEach((item) => {
+        console.error(`      Post ${item.postIndex}: ${item.imageFile}`);
+      });
+    }
+    console.error('\n   Please replace all "PASTE_BLOB_ID_HERE" with actual blob IDs\n');
+    process.exit(1);
+  }
+
+  // Build complete post data with blob IDs
+  const postsWithBlobs: PostWithBlobId[] = POSTS.map((post, index) => {
+    if (post.encrypted) {
+      const encData = encryptedImagesData.find((e) => e.postIndex === index);
+      if (!encData) {
+        throw new Error(`Missing encrypted data for post ${index}`);
+      }
+      return {
+        postIndex: index,
+        author: post.author,
+        caption: post.caption,
+        blobId: encData.walrusBlobId,
+        encryptionId: encData.encryptionId,
+      };
+    } else {
+      const unencData = unencryptedImagesData.find((u) => u.postIndex === index);
+      if (!unencData) {
+        throw new Error(`Missing unencrypted data for post ${index}`);
+      }
+      return {
+        postIndex: index,
+        author: post.author,
+        caption: post.caption,
+        blobId: unencData.walrusBlobId,
+        encryptionId: null,
+      };
+    }
+  });
+
+  // Group posts by author
+  const postsByAuthor = new Map<number, PostWithBlobId[]>();
+  for (const post of postsWithBlobs) {
+    if (!postsByAuthor.has(post.author)) {
+      postsByAuthor.set(post.author, []);
+    }
+    postsByAuthor.get(post.author)!.push(post);
+  }
+
+  console.log('📊 Posts grouped by author:');
+  postsByAuthor.forEach((posts, authorIndex) => {
+    console.log(`   Author ${authorIndex}: ${posts.length} post(s)`);
+  });
+  console.log('');
 
   // Create Sui client
   const client = new SuiClient({ url: SUI_RPC_URL });
 
-  // Load keypair from private key
-  const keypair = Ed25519Keypair.fromSecretKey(POSTER_PRIVATE_KEY!);
-  const address = keypair.getPublicKey().toSuiAddress();
-  console.log(`📍 Poster address: ${address}`);
+  // Create transactions for each author
+  let totalPostsCreated = 0;
 
-  // Check balance
-  const balance = await client.getBalance({ owner: address });
-  console.log(`💰 Balance: ${Number(balance.totalBalance) / 1_000_000_000} SUI\n`);
+  for (const [authorIndex, authorPosts] of postsByAuthor.entries()) {
+    console.log(`\n👤 Author ${authorIndex}:`);
 
-  // Build transaction with multiple post creations
-  const tx = new Transaction();
+    const keypair = getKeypair(authorIndex);
+    const address = keypair.getPublicKey().toSuiAddress();
+    console.log(`   Address: ${address}`);
 
-  console.log(`📝 Creating ${MOCK_CAPTIONS.length} posts...`);
+    // Check balance
+    const balance = await client.getBalance({ owner: address });
+    console.log(`   Balance: ${Number(balance.totalBalance) / 1_000_000_000} SUI`);
+    console.log(`   Creating ${authorPosts.length} post(s)...\n`);
 
-  MOCK_CAPTIONS.forEach((caption, index) => {
-    tx.moveCall({
-      target: `${PACKAGE_ID}::posts::create_post`,
-      arguments: [
-        tx.pure.string(caption),
-        tx.pure.string(MOCK_BLOB_IDS[index]),
-        tx.object.clock(),
-      ],
-    });
-    console.log(`   ${index + 1}. "${caption.slice(0, 50)}..."`);
-  });
+    // Build transaction
+    const tx = new Transaction();
 
-  console.log('\n🔄 Executing transaction...');
+    for (const post of authorPosts) {
+      console.log(`   📝 Post ${post.postIndex}:`);
+      console.log(`      Caption: "${post.caption.slice(0, 50)}${post.caption.length > 50 ? '...' : ''}"`);
+      console.log(`      Blob ID: ${post.blobId}`);
+      console.log(`      Encrypted: ${post.encryptionId ? 'Yes' : 'No'}`);
 
-  // Sign and execute transaction
-  const result = await client.signAndExecuteTransaction({
-    signer: keypair,
-    transaction: tx,
-    options: {
-      showEffects: true,
-      showObjectChanges: true,
-    },
-  });
-
-  console.log('\n✅ Transaction executed successfully!');
-  console.log(`📋 Digest: ${result.digest}`);
-
-  // Extract created post object IDs
-  const createdPosts = result.objectChanges?.filter(
-    (change) => change.type === 'created' && change.objectType.includes('::posts::Post')
-  );
-
-  if (createdPosts && createdPosts.length > 0) {
-    console.log(`\n📦 Created ${createdPosts.length} post object(s):`);
-    createdPosts.forEach((post, index) => {
-      if (post.type === 'created') {
-        console.log(`   ${index + 1}. ${post.objectId}`);
+      if (post.encryptionId) {
+        // Encrypted post
+        const encryptionIdBytes = fromHex(post.encryptionId);
+        tx.moveCall({
+          target: `${PACKAGE_ID}::posts::create_post`,
+          arguments: [
+            tx.pure.string(post.caption),
+            tx.pure.string(post.blobId),
+            tx.pure.option('vector<u8>', Array.from(encryptionIdBytes)),
+            tx.object(CLOCK_OBJECT_ID),
+          ],
+        });
+      } else {
+        // Unencrypted post
+        tx.moveCall({
+          target: `${PACKAGE_ID}::posts::create_post`,
+          arguments: [
+            tx.pure.string(post.caption),
+            tx.pure.string(post.blobId),
+            tx.pure.option('vector<u8>', null),
+            tx.object(CLOCK_OBJECT_ID),
+          ],
+        });
       }
+    }
+
+    console.log('\n   🔄 Executing transaction...');
+
+    // Sign and execute transaction
+    const result = await client.signAndExecuteTransaction({
+      signer: keypair,
+      transaction: tx,
+      options: {
+        showEffects: true,
+        showObjectChanges: true,
+      },
     });
+
+    console.log(`   ✅ Transaction successful!`);
+    console.log(`   📋 Digest: ${result.digest}`);
+
+    // Extract created post object IDs
+    const createdPosts = result.objectChanges?.filter(
+      (change) => change.type === 'created' && change.objectType.includes('::posts::Post')
+    );
+
+    if (createdPosts && createdPosts.length > 0) {
+      console.log(`   📦 Created ${createdPosts.length} post object(s):`);
+      createdPosts.forEach((post) => {
+        if (post.type === 'created') {
+          console.log(`      ${post.objectId}`);
+        }
+      });
+      totalPostsCreated += createdPosts.length;
+    }
   }
 
-  console.log('\n🎉 Done! Posts are now live on Sui testnet.');
+  console.log(`\n\n🎉 Done! Created ${totalPostsCreated} posts across ${postsByAuthor.size} authors.`);
+  console.log('📖 All posts are now live on Sui testnet.\n');
 }
 
 // Run the script
-createPosts().catch((error) => {
+main().catch((error) => {
   console.error('❌ Error creating posts:', error);
+  if (error instanceof Error) {
+    console.error('Error details:', error.message);
+  }
   process.exit(1);
 });

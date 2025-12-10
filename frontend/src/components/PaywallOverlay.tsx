@@ -51,10 +51,10 @@ export function PaywallOverlay({ postId }: PaywallOverlayProps) {
 
         <Flex direction="column" gap="1" align="center">
           <Text size="4" weight="bold">
-            Premium Content
+            Premium Image
           </Text>
           <Text size="2" color="gray">
-            Unlock this post to view
+            Unlock to view the full image
           </Text>
         </Flex>
 
@@ -64,13 +64,13 @@ export function PaywallOverlay({ postId }: PaywallOverlayProps) {
           onClick={handleUnlockClick}
           style={{ cursor: 'pointer' }}
         >
-          Unlock Content (Free Demo)
+          Unlock Image (Free Demo)
         </Button>
 
         <PaymentPopover
           isOpen={showPaymentPopover}
           onClose={() => setShowPaymentPopover(false)}
-          title="Unlock Content"
+          title="Unlock Image"
           postId={postId}
         />
       </Flex>

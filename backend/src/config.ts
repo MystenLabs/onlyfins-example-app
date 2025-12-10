@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { fromHex } from '@mysten/sui/utils';
 
 dotenv.config();
 
@@ -11,10 +13,25 @@ export const SUI_RPC_URL = 'https://fullnode.testnet.sui.io:443';
 // Clock object ID (shared system object)
 export const CLOCK_OBJECT_ID = '0x6';
 
-// Poster wallet private key (required)
-export const POSTER_PRIVATE_KEY = process.env.POSTER_PRIVATE_KEY;
-if (!POSTER_PRIVATE_KEY) {
-  throw new Error('POSTER_PRIVATE_KEY environment variable is required');
+// Author wallet private keys (required - 3 authors)
+const AUTHOR_1_KEY = process.env.AUTHOR_1_PRIVATE_KEY;
+const AUTHOR_2_KEY = process.env.AUTHOR_2_PRIVATE_KEY;
+const AUTHOR_3_KEY = process.env.AUTHOR_3_PRIVATE_KEY;
+
+if (!AUTHOR_1_KEY || !AUTHOR_2_KEY || !AUTHOR_3_KEY) {
+  throw new Error('All three author private keys (AUTHOR_1_PRIVATE_KEY, AUTHOR_2_PRIVATE_KEY, AUTHOR_3_PRIVATE_KEY) are required');
+}
+
+export const AUTHOR_PRIVATE_KEYS = [AUTHOR_1_KEY, AUTHOR_2_KEY, AUTHOR_3_KEY];
+
+/**
+ * Get keypair for a specific author (0-2)
+ */
+export function getKeypair(authorIndex: number): Ed25519Keypair {
+  if (authorIndex < 0 || authorIndex > 2) {
+    throw new Error(`Invalid author index: ${authorIndex}. Must be 0, 1, or 2.`);
+  }
+  return Ed25519Keypair.fromSecretKey(AUTHOR_PRIVATE_KEYS[authorIndex]);
 }
 
 // Seal encryption configuration (testnet)

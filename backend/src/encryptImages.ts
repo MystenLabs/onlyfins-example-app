@@ -4,21 +4,30 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PACKAGE_ID, SEAL_SERVER_IDs } from './config.js';
+import { POSTS } from './postData.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Simple encryption ID generator (timestamp + index)
-function generateEncryptionId(index: number): string {
+function generateEncryptionId(postIndex: number): string {
   const timestamp = Date.now();
-  const combined = `${timestamp}_${index}`;
+  const combined = `${timestamp}_${postIndex}`;
   return Buffer.from(combined).toString('hex');
 }
 
-interface EncryptionData {
+interface EncryptedImageData {
+  postIndex: number;
+  imageFile: string;
   encryptedFile: string;
   encryptionId: string;
+  walrusBlobId: string;
+}
+
+interface UnencryptedImageData {
+  postIndex: number;
+  imageFile: string;
   walrusBlobId: string;
 }
 
@@ -33,12 +42,28 @@ async function main() {
 
   console.log('📋 Configuration:');
   console.log(`   Package ID: ${PACKAGE_ID}`);
-  console.log(`   Seal Key Server: ${SEAL_SERVER_IDs}`);
+  console.log(`   Seal Key Servers: ${SEAL_SERVER_IDs.length} servers`);
   console.log(`   Network: testnet\n`);
+
+  // Filter posts by encryption status
+  const encryptedPosts = POSTS.map((post, index) => ({ post, index }))
+    .filter(({ post }) => post.encrypted);
+  const unencryptedPosts = POSTS.map((post, index) => ({ post, index }))
+    .filter(({ post }) => !post.encrypted);
+
+  console.log(`📊 Post Statistics:`);
+  console.log(`   Total posts: ${POSTS.length}`);
+  console.log(`   Encrypted: ${encryptedPosts.length}`);
+  console.log(`   Unencrypted: ${unencryptedPosts.length}\n`);
+
+  if (encryptedPosts.length === 0) {
+    console.log('ℹ️  No encrypted posts found. Nothing to encrypt.');
+    console.log('   Update postData.ts to add posts with encrypted: true\n');
+    process.exit(0);
+  }
 
   // Initialize Seal client
   const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
-  // Initialize Seal client
   const sealClient = new SealClient({
     suiClient: suiClient,
     serverConfigs: SEAL_SERVER_IDs.map((id) => ({
@@ -55,45 +80,25 @@ async function main() {
   // Create encrypted directory if it doesn't exist
   await fs.mkdir(encryptedDir, { recursive: true });
 
-  // Read images from images/ directory
-  let imageFiles: string[];
-  try {
-    const allFiles = await fs.readdir(imagesDir);
-    imageFiles = allFiles
-      .filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
-      .slice(0, 4);
-  } catch (error) {
-    console.error('❌ Error: Cannot read images directory');
-    console.error('   Please create backend/images/ and add at least 4 images');
-    process.exit(1);
-  }
+  const encryptedImagesData: EncryptedImageData[] = [];
 
-  if (imageFiles.length < 4) {
-    console.error(`❌ Error: Need at least 4 images in backend/images/`);
-    console.error(`   Found only ${imageFiles.length} image(s)`);
-    console.error('   Supported formats: jpg, jpeg, png, gif, webp');
-    process.exit(1);
-  }
-
-  console.log(`✅ Found ${imageFiles.length} images to encrypt\n`);
-
-  const encryptionData: EncryptionData[] = [];
-
-  // Encrypt each image
-  for (let i = 0; i < imageFiles.length; i++) {
-    const filename = imageFiles[i];
-    console.log(`📸 Processing ${filename}...`);
+  // Encrypt images for encrypted posts
+  console.log('🔒 Encrypting images for encrypted posts:\n');
+  for (const { post, index } of encryptedPosts) {
+    console.log(`📸 Post ${index}: ${post.imageFile}`);
+    console.log(`   Author: ${post.author}`);
+    console.log(`   Caption: "${post.caption.slice(0, 50)}${post.caption.length > 50 ? '...' : ''}"`);
 
     try {
       // Read image bytes
-      const imagePath = path.join(imagesDir, filename);
+      const imagePath = path.join(imagesDir, post.imageFile);
       const imageBuffer = await fs.readFile(imagePath);
       const imageBytes = new Uint8Array(imageBuffer);
 
       console.log(`   Image size: ${(imageBytes.length / 1024).toFixed(2)} KB`);
 
       // Generate encryption ID
-      const encryptionId = generateEncryptionId(i);
+      const encryptionId = generateEncryptionId(index);
       console.log(`   Encryption ID: ${encryptionId}`);
 
       // Encrypt with Seal
@@ -106,11 +111,13 @@ async function main() {
       });
 
       // Write encrypted bytes to file
-      const encryptedFilename = `image_${i + 1}.enc`;
+      const encryptedFilename = `encrypted_${index}.enc`;
       const encryptedPath = path.join(encryptedDir, encryptedFilename);
       await fs.writeFile(encryptedPath, encryptedObject);
 
-      encryptionData.push({
+      encryptedImagesData.push({
+        postIndex: index,
+        imageFile: post.imageFile,
         encryptedFile: encryptedFilename,
         encryptionId,
         walrusBlobId: 'PASTE_BLOB_ID_HERE',
@@ -118,7 +125,7 @@ async function main() {
 
       console.log(`   ✅ Saved to encrypted/${encryptedFilename}\n`);
     } catch (error) {
-      console.error(`   ❌ Failed to encrypt ${filename}:`, error);
+      console.error(`   ❌ Failed to encrypt ${post.imageFile}:`, error);
       if (error instanceof Error) {
         console.error(`   Error: ${error.message}`);
       }
@@ -126,25 +133,49 @@ async function main() {
     }
   }
 
-  // Save encryption data with placeholder for blob IDs
-  const mappingPath = path.join(encryptedDir, 'encryption-ids.json');
-  await fs.writeFile(mappingPath, JSON.stringify(encryptionData, null, 2));
+  // Create unencrypted images mapping
+  const unencryptedImagesData: UnencryptedImageData[] = unencryptedPosts.map(({ post, index }) => ({
+    postIndex: index,
+    imageFile: post.imageFile,
+    walrusBlobId: 'PASTE_BLOB_ID_HERE',
+  }));
 
-  console.log('\n✅ All images encrypted successfully!\n');
-  console.log('📋 Encryption data saved to encrypted/encryption-ids.json\n');
-  console.log('📄 Encryption IDs:');
-  encryptionData.forEach((item) => {
-    console.log(`   ${item.encryptedFile}: ${item.encryptionId}`);
-  });
+  // Save encrypted images data
+  const encryptedMappingPath = path.join(encryptedDir, 'encrypted-images.json');
+  await fs.writeFile(encryptedMappingPath, JSON.stringify(encryptedImagesData, null, 2));
 
-  console.log('\n🚀 Next steps:');
-  console.log('   1. Upload each encrypted file to Walrus:\n');
-  for (let i = 1; i <= imageFiles.length; i++) {
-    console.log(`      walrus store backend/encrypted/image_${i}.enc`);
+  // Save unencrypted images data
+  const unencryptedMappingPath = path.join(encryptedDir, 'unencrypted-images.json');
+  await fs.writeFile(unencryptedMappingPath, JSON.stringify(unencryptedImagesData, null, 2));
+
+  console.log('✅ Image encryption complete!\n');
+  console.log(`📋 Encrypted images data: encrypted/encrypted-images.json`);
+  console.log(`📋 Unencrypted images data: encrypted/unencrypted-images.json\n`);
+
+  console.log('🚀 Next steps:');
+  console.log('   1. Upload ALL images to Walrus:\n');
+
+  if (encryptedPosts.length > 0) {
+    console.log('      Encrypted images:');
+    encryptedImagesData.forEach((item) => {
+      console.log(`      walrus store backend/encrypted/${item.encryptedFile}`);
+    });
+    console.log('');
   }
-  console.log('\n   2. Edit encrypted/encryption-ids.json and replace "PASTE_BLOB_ID_HERE"');
-  console.log('      with the actual Walrus blob IDs from the upload commands\n');
-  console.log('   3. Run: pnpm create-encrypted-posts\n');
+
+  if (unencryptedPosts.length > 0) {
+    console.log('      Unencrypted images:');
+    unencryptedImagesData.forEach((item) => {
+      console.log(`      walrus store backend/images/${item.imageFile}`);
+    });
+    console.log('');
+  }
+
+  console.log('   2. Fill in blob IDs:');
+  console.log('      - Edit encrypted/encrypted-images.json');
+  console.log('      - Edit encrypted/unencrypted-images.json');
+  console.log('      - Replace all "PASTE_BLOB_ID_HERE" with actual Walrus blob IDs\n');
+  console.log('   3. Run: pnpm create-posts\n');
 }
 
 main().catch((error) => {

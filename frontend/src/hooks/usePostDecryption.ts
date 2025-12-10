@@ -10,19 +10,19 @@ import { POSTS_PACKAGE_ID, WALRUS_AGGREGATOR_URL } from '../constants';
 import { fetchFromWalrus } from '../utils/walrus-fetch';
 
 interface DecryptedContent {
-  caption: string;
   imageBytes: string;
   isDecrypting?: boolean;
 }
 
 /**
- * Automatically decrypts posts when user has access (ViewerToken) and session key.
+ * Automatically decrypts post images when user has access (ViewerToken) and session key.
+ * Captions are now stored as plaintext and don't need decryption.
  *
  * @param posts - Transformed posts from transformSuiObjectsToPosts
- * @param rawSuiData - Raw blockchain data (needed for encrypted caption bytes)
+ * @param rawSuiData - Raw blockchain data (needed for image blob IDs)
  * @param sessionKey - Seal session key for decryption
  * @param viewerTokens - User's ViewerTokens for access control
- * @returns Record of decrypted content by post ID
+ * @returns Record of decrypted image URLs by post ID
  */
 export function usePostDecryption(
   posts: Post[],
@@ -36,7 +36,7 @@ export function usePostDecryption(
   useEffect(() => {
     if (!sessionKey || !rawSuiData) return;
 
-    // Filter posts that need decryption (unlocked + has encryptionId)
+    // Filter posts that need image decryption (unlocked + has encryptionId)
     const postsToDecrypt = posts.filter(
       (p) => p.kind === 'unlocked' && 'encryptionId' in p && p.encryptionId
     );
@@ -46,7 +46,7 @@ export function usePostDecryption(
     // Initialize Seal client
     const sealClient = createSealClient();
 
-    // Decrypt each post
+    // Decrypt each post's image
     postsToDecrypt.forEach(async (post) => {
       // Skip if already decrypted or currently decrypting
       if (decryptedContent[post.id] || decryptingPosts.has(post.id)) {
@@ -58,8 +58,7 @@ export function usePostDecryption(
       setDecryptedContent((prev) => ({
         ...prev,
         [post.id]: {
-          caption: '⏳ Decrypting caption...',
-          imageBytes: '',
+          imageBytes: '⏳ Decrypting image...',
           isDecrypting: true,
         },
       }));
@@ -73,7 +72,7 @@ export function usePostDecryption(
 
         const fields = rawPost.data.content.fields as any;
         const encryptionId = (post as any).encryptionId;
-        console.log('post encryptionId', encryptionId)
+        console.log('post encryptionId', encryptionId);
 
         // Find ViewerToken for access control
         const viewerToken = viewerTokens.find((t) => t.postId === post.id);
@@ -94,40 +93,7 @@ export function usePostDecryption(
 
         const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
 
-        // This doesn't seem to help
-        // await sealClient.fetchKeys({
-        //   ids: [encryptionId],
-        //   txBytes: txBytes,
-        //   sessionKey,
-        //   threshold: 1,
-        // });
-
-        // 1. Decrypt caption (stored on-chain as encrypted bytes)
-        const encryptedCaption = new Uint8Array(fields.caption);
-        console.log(`Decrypting caption for post ${post.id}, size: ${encryptedCaption.length} bytes`);
-
-        const decryptedCaptionBytes = await sealClient.decrypt({
-          data: encryptedCaption,
-          sessionKey,
-          txBytes,
-          checkShareConsistency: false,
-        });
-
-        const decryptedCaption = new TextDecoder().decode(decryptedCaptionBytes);
-        console.log(`Caption decrypted: "${decryptedCaption}"`);
-
-        // Update with decrypted caption while image is still decrypting
-        setDecryptedContent((prev) => ({
-          ...prev,
-          [post.id]: {
-            caption: decryptedCaption,
-            imageBytes: '⏳ Decrypting image...',
-            isDecrypting: true,
-          },
-        }));
-        
-
-        // 2. Decrypt image (stored off-chain in Walrus)
+        // Fetch decryption keys from Seal
         await sealClient.fetchKeys({
           ids: [encryptionId],
           txBytes: txBytes,
@@ -135,8 +101,9 @@ export function usePostDecryption(
           threshold: 1,
         });
 
+        // Decrypt image (stored off-chain in Walrus)
         const imageBlobId = fields.image_blob_id;
-        console.log('imageBlobId', imageBlobId)
+        console.log('imageBlobId', imageBlobId);
         const walrusUrl = `${WALRUS_AGGREGATOR_URL}/${imageBlobId}`;
         console.log(`Fetching encrypted image from Walrus: ${walrusUrl}`);
 
@@ -157,11 +124,10 @@ export function usePostDecryption(
         const imageUrl = URL.createObjectURL(imageBlob);
         console.log(`Image decrypted successfully: ${imageUrl}`);
 
-        // Update with full decrypted content
+        // Update with decrypted image
         setDecryptedContent((prev) => ({
           ...prev,
           [post.id]: {
-            caption: decryptedCaption,
             imageBytes: imageUrl,
             isDecrypting: false,
           },
@@ -174,16 +140,14 @@ export function usePostDecryption(
           return next;
         });
       } catch (error) {
-        console.log('session key', sessionKey.export())
-        console.error(`Decryption failed for post ${post.id}:`, error);
-
+        console.log('session key', sessionKey.export());
+        console.error(`Image decryption failed for post ${post.id}:`, error);
 
         // Show error state
         setDecryptedContent((prev) => ({
           ...prev,
           [post.id]: {
-            caption: '❌ Decryption failed',
-            imageBytes: '',
+            imageBytes: '❌ Image decryption failed',
             isDecrypting: false,
           },
         }));
