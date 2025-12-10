@@ -3,6 +3,7 @@ import { LockClosedIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { PaymentPopover } from './PaymentPopover';
+import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 interface PaywallOverlayProps {
   postId: string;
@@ -13,10 +14,16 @@ export function PaywallOverlay({ postId }: PaywallOverlayProps) {
   const currentAccount = useCurrentAccount();
 
   const handleUnlockClick = () => {
+    trackEvent(AnalyticsEvents.UNLOCK_CLICKED, {
+      post_id: postId,
+    });
     if (!currentAccount) {
       alert('Please connect your wallet first');
       return;
     }
+    trackEvent(AnalyticsEvents.PAYMENT_MODAL_OPENED, {
+      post_id: postId,
+    });
     setShowPaymentPopover(true);
   };
 

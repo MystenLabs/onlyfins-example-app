@@ -4,6 +4,7 @@ import { AddressDisplay } from './AddressDisplay';
 import { formatTimestamp } from '../utils/formatters';
 import { useState } from 'react';
 import { PaywallOverlay } from './PaywallOverlay';
+import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 interface BasePost {
   id: string;
@@ -42,18 +43,30 @@ export function PostCard({ post }: PostCardProps) {
   const handleLike = () => {
     if (isLiked) {
       setLikeCount(prev => prev - 1);
+      trackEvent(AnalyticsEvents.POST_UNLIKED, {
+        post_id: post.id,
+      });
     } else {
       setLikeCount(prev => prev + 1);
+      trackEvent(AnalyticsEvents.POST_LIKED, {
+        post_id: post.id,
+      });
     }
     setIsLiked(!isLiked);
   };
 
   const handleComment = () => {
+    trackEvent(AnalyticsEvents.POST_COMMENT_CLICKED, {
+      post_id: post.id,
+    });
     console.log('Comment clicked for post:', post.id);
     // TODO: Implement comment functionality
   };
 
   const handleShare = () => {
+    trackEvent(AnalyticsEvents.POST_SHARE_CLICKED, {
+      post_id: post.id,
+    });
     console.log('Share clicked for post:', post.id);
     // TODO: Implement share functionality
   };

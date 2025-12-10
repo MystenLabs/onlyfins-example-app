@@ -1,5 +1,6 @@
 import { Card, Flex, Text, Button, Box, Spinner } from '@radix-ui/themes';
 import { usePayForContent } from '../hooks/usePayForContent';
+import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
 
 interface PaymentPopoverProps {
   isOpen: boolean;
@@ -21,19 +22,36 @@ export function PaymentPopover({
   }
 
   const handleConfirm = () => {
+    trackEvent(AnalyticsEvents.PAYMENT_CONFIRMED, {
+      post_id: postId,
+    });
     mutation.mutate(
       { postId },
       {
         onSuccess: (viewerTokenId) => {
           console.log('Access granted! ViewerToken:', viewerTokenId);
+          trackEvent(AnalyticsEvents.CONTENT_UNLOCKED, {
+            post_id: postId,
+            viewer_token_id: viewerTokenId,
+          });
           onClose();
           // ViewerTokens query will auto-refetch, paywall will disappear
         },
         onError: (error) => {
           console.error('Access request failed:', error);
+          trackError('payment', error instanceof Error ? error.message : 'Failed to unlock content', {
+            post_id: postId,
+          });
         },
       }
     );
+  };
+
+  const handleCancel = () => {
+    trackEvent(AnalyticsEvents.PAYMENT_CANCELLED, {
+      post_id: postId,
+    });
+    onClose();
   };
 
   return (
@@ -49,7 +67,7 @@ export function PaymentPopover({
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 999,
         }}
-        onClick={mutation.isPending ? undefined : onClose}
+        onClick={mutation.isPending ? undefined : handleCancel}
       />
 
       {/* Payment Card */}
@@ -97,7 +115,7 @@ export function PaymentPopover({
           <Flex gap="2" justify="end">
             <Button
               variant="soft"
-              onClick={onClose}
+              onClick={handleCancel}
               disabled={mutation.isPending}
             >
               Cancel

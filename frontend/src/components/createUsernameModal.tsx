@@ -3,6 +3,7 @@ import { Box, Card, Flex, Heading, Button, Text, TextField } from "@radix-ui/the
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormEvent } from "react";
 import { useSessionJWT } from "../hooks/useSessionJWT";
+import { trackEvent, trackError, AnalyticsEvents } from "../utils/analytics";
 
 interface CreateUsernameModalProps {
   isOpen: boolean;
@@ -40,13 +41,22 @@ export default function CreateUsernameModal({ isOpen, onClose }: CreateUsernameM
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, username) => {
+      trackEvent(AnalyticsEvents.USERNAME_CREATED, {
+        username: username,
+        address: currentAccount?.address || '',
+      });
       if (currentAccount?.address) {
         queryClient.invalidateQueries({
           queryKey: ['subnames', currentAccount.address]
         });
       }
       onClose?.();
+    },
+    onError: (error, username) => {
+      trackError('username_creation', error instanceof Error ? error.message : 'Failed to create username', {
+        username: username,
+      });
     },
   });
 

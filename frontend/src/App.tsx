@@ -8,6 +8,7 @@ import { useUserSubname } from "./hooks/useUserSubname";
 import { Feed } from "./components/Feed";
 import { SessionExpirationModal } from "./components/SessionExpirationModal";
 import { useSessionKey } from "./providers/SessionKeyProvider";
+import { trackEvent, AnalyticsEvents } from "./utils/analytics";
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -15,8 +16,19 @@ function App() {
   const [shouldCreateUsername, setShouldCreateUsername] = useState(false);
   const [shouldShowSessionModal, setShouldShowSessionModal] = useState(false);
   const { sessionKey, isInitializing } = useSessionKey();
+  const [prevAccount, setPrevAccount] = useState(currentAccount);
 
-
+  // Track wallet connection changes
+  useEffect(() => {
+    if (currentAccount && !prevAccount) {
+      trackEvent(AnalyticsEvents.WALLET_CONNECTED, {
+        address: currentAccount.address,
+      });
+    } else if (!currentAccount && prevAccount) {
+      trackEvent(AnalyticsEvents.WALLET_DISCONNECTED);
+    }
+    setPrevAccount(currentAccount);
+  }, [currentAccount, prevAccount]);
 
   // Show username modal if user has no subnames
   useEffect(() => {
@@ -56,7 +68,7 @@ function App() {
             size="2"
             variant="ghost"
             onClick={() => {
-              // trackEvent(AnalyticsEvents.GITHUB_CLICKED); // TODO
+              trackEvent(AnalyticsEvents.GITHUB_CLICKED);
               window.open('https://github.com/MystenLabs/onlyfins-example-app', '_blank');
             }}
           >
@@ -66,7 +78,7 @@ function App() {
             size="2"
             variant="ghost"
             onClick={() => {
-              // trackEvent(AnalyticsEvents.DISCORD_CLICKED); // TODO
+              trackEvent(AnalyticsEvents.DISCORD_CLICKED);
               window.open('https://discord.gg/sS893zcPMN', '_blank');
             }}
           >

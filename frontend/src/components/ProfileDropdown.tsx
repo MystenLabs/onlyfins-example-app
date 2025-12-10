@@ -3,11 +3,17 @@ import { Button, DropdownMenu, Avatar, Flex } from "@radix-ui/themes";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { useUserSubname } from "../hooks/useUserSubname";
 import { isEnokiWallet } from "@mysten/enoki";
+import { trackEvent, AnalyticsEvents } from "../utils/analytics";
 
 export function ProfileDropdown() {
   const currentAccount = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const { subname, isLoading } = useUserSubname();
+
+  const handleDisconnect = () => {
+    trackEvent(AnalyticsEvents.WALLET_DISCONNECTED);
+    disconnect();
+  };
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -77,7 +83,7 @@ export function ProfileDropdown() {
           </div>
         </DropdownMenu.Label>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item onClick={() => disconnect()}>
+        <DropdownMenu.Item onClick={handleDisconnect}>
           Disconnect
         </DropdownMenu.Item>
       </DropdownMenu.Content>

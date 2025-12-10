@@ -7,6 +7,7 @@ import { usePostDecryption } from '../hooks/usePostDecryption';
 import { transformSuiObjectsToPosts } from '../utils/post-transform';
 import { useMemo } from 'react';
 import { useSessionKey } from '../providers/SessionKeyProvider';
+import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
 
 export function Feed() {
   // Fetch ViewerTokens ONCE for all posts (optimization)
@@ -62,7 +63,10 @@ export function Feed() {
         <Button
           size="2"
           variant="soft"
-          onClick={() => refetch()}
+          onClick={() => {
+            trackEvent(AnalyticsEvents.FEED_REFRESHED);
+            refetch();
+          }}
           disabled={isPending}
         >
           {isPending ? 'Refreshing...' : 'Refresh'}

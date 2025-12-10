@@ -1,5 +1,6 @@
 import { Card, Flex, Text, Button, Box, Heading } from '@radix-ui/themes';
 import { useSessionKey } from '../providers/SessionKeyProvider';
+import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 interface SessionExpirationModalProps {
   isOpen: boolean;
@@ -7,6 +8,11 @@ interface SessionExpirationModalProps {
 
 export function SessionExpirationModal({ isOpen }: SessionExpirationModalProps) {
   const { initializeManually, isInitializing } = useSessionKey();
+
+  const handleSignSessionKey = async () => {
+    trackEvent(AnalyticsEvents.SESSION_KEY_SIGNED);
+    await initializeManually();
+  };
 
   // Keep modal open while initializing to prevent flash/pause
   if (!isOpen && !isInitializing) {
@@ -57,7 +63,7 @@ export function SessionExpirationModal({ isOpen }: SessionExpirationModalProps) 
 
             <Flex gap="2" justify="end">
               <Button
-                onClick={initializeManually}
+                onClick={handleSignSessionKey}
                 variant="solid"
                 size="3"
                 disabled={isInitializing}
