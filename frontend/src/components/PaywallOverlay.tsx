@@ -18,7 +18,7 @@ export function PaywallOverlay({ postId }: PaywallOverlayProps) {
       post_id: postId,
     });
     if (!currentAccount) {
-      alert('Please connect your wallet first');
+      alert('Please sign in at the top of the page first');
       return;
     }
     trackEvent(AnalyticsEvents.PAYMENT_MODAL_OPENED, {
