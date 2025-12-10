@@ -7,7 +7,7 @@ import { usePostDecryption } from '../hooks/usePostDecryption';
 import { transformSuiObjectsToPosts } from '../utils/post-transform';
 import { useMemo } from 'react';
 import { useSessionKey } from '../providers/SessionKeyProvider';
-import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
+import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 export function Feed() {
   // Fetch ViewerTokens ONCE for all posts (optimization)

@@ -42,6 +42,7 @@ export default function CreateUsernameModal({ isOpen, onClose }: CreateUsernameM
       return response.json();
     },
     onSuccess: (data, username) => {
+      console.log('data', data)
       trackEvent(AnalyticsEvents.USERNAME_CREATED, {
         username: username,
         address: currentAccount?.address || '',
