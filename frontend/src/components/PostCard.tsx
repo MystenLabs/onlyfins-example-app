@@ -2,7 +2,6 @@ import { Card, Flex, Text, Box, IconButton, Separator, Spinner } from '@radix-ui
 import { ChatBubbleIcon, Share1Icon, HeartIcon } from '@radix-ui/react-icons';
 import { AddressDisplay } from './AddressDisplay';
 import { formatTimestamp } from '../utils/formatters';
-import { useState } from 'react';
 import { PaywallOverlay } from './PaywallOverlay';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 import { InfoTooltip } from './InfoTooltip';
@@ -40,8 +39,6 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: PostCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const { showToast } = useToast();
 
   const handleLike = () => {
@@ -162,11 +159,6 @@ export function PostCard({ post }: PostCardProps) {
             >
               <HeartIcon width="18" height="18" />
             </IconButton>
-            {likeCount > 0 && (
-              <Text size="2" color="gray">
-                {likeCount}
-              </Text>
-            )}
           </Flex>
 
           <Flex align="center" gap="1">
@@ -178,11 +170,6 @@ export function PostCard({ post }: PostCardProps) {
             >
               <ChatBubbleIcon width="18" height="18" />
             </IconButton>
-            {(post.commentCount || 0) > 0 && (
-              <Text size="2" color="gray">
-                {post.commentCount}
-              </Text>
-            )}
           </Flex>
 
           <Box style={{ marginLeft: 'auto' }}>
