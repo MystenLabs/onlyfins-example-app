@@ -1,13 +1,13 @@
-import { Flex, Text, Box, Button, Separator } from '@radix-ui/themes';
+import { Flex, Text, Box, Separator } from '@radix-ui/themes';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { PostCard, Post } from './PostCard';
-import { POST_ADDRESSES } from '../constants';
+import { POST_ADDRESSES, WEB3_BENEFITS } from '../constants';
 import { useViewerTokens } from '../hooks/useViewerTokens';
 import { usePostDecryption } from '../hooks/usePostDecryption';
 import { transformSuiObjectsToPosts } from '../utils/post-transform';
 import { useMemo } from 'react';
 import { useSessionKey } from '../providers/SessionKeyProvider';
-import { trackEvent, AnalyticsEvents } from '../utils/analytics';
+import { InfoTooltip } from './InfoTooltip';
 
 export function Feed() {
   // Fetch ViewerTokens ONCE for all posts (optimization)
@@ -17,7 +17,7 @@ export function Feed() {
   const { sessionKey } = useSessionKey();
 
   // Fetch all posts from Sui using multiGetObjects
-  const { data, isPending, isError, error, refetch } = useSuiClientQuery(
+  const { data, isPending, isError, error } = useSuiClientQuery(
     'multiGetObjects',
     {
       ids: POST_ADDRESSES,
@@ -57,20 +57,15 @@ export function Feed() {
   return (
     <Flex direction="column" gap="3">
       <Flex justify="between" align="center">
-        <Text size="5" weight="bold">
-          Feed
-        </Text>
-        <Button
-          size="2"
-          variant="soft"
-          onClick={() => {
-            trackEvent(AnalyticsEvents.FEED_REFRESHED);
-            refetch();
-          }}
-          disabled={isPending}
-        >
-          {isPending ? 'Refreshing...' : 'Refresh'}
-        </Button>
+        <Flex align="center" gap="1">
+          <Text size="5" weight="bold">
+            Feed
+          </Text>
+          <InfoTooltip title={WEB3_BENEFITS.CROSS_PLATFORM.title}>
+            {WEB3_BENEFITS.CROSS_PLATFORM.content}
+          </InfoTooltip>
+        </Flex>
+        
       </Flex>
 
       <Separator size="4" />

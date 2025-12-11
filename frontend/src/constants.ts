@@ -26,3 +26,27 @@ export const SEAL_SERVER_IDS = [
 // Backend API URL for sponsored transactions
 export const BACKEND_URL = "https://messaging-sdk-example-production.up.railway.app";
 // export const BACKEND_URL = 'http://localhost:3000';
+
+// Web3 Benefits Content for InfoTooltips
+export const WEB3_BENEFITS = {
+  POST_OWNERSHIP: {
+    title: "True Creator Ownership",
+    content: "Each post is completely owned by the creator on the Sui blockchain. This includes the caption, attachment, and all metadata. The post can never be deleted from the blockchain. While the app owner might choose not to render certain posts due to policy, nothing stops another app from displaying this content with different policies."
+  },
+  PERMANENT_ACCESS: {
+    title: "Permanent, Irrevocable Access",
+    content: "When you unlock premium content, you receive a unique AccessToken that belongs to your account forever. No one - not the creator, not the app admin - can ever revoke your access. Even if this post migrates to another platform, your AccessToken will continue to work, guaranteeing your access to the content you've paid for."
+  },
+  TRANSPARENT_FEES: {
+    title: "Transparent On-Chain Policies",
+    content: "All middleman policies and fees are completely transparent because they're enforced by smart contracts on-chain. This dramatically reduces potential abuse from app owners and ensures creators are fairly compensated. You can verify exactly where your payment goes - no hidden fees, no arbitrary deductions."
+  },
+  CREATOR_CONTROL: {
+    title: "Creator-Controlled Access",
+    content: "Creators have explicit control over who can access their premium content and under what conditions. For example, a creator might require users to hold a specific token from an in-person event. The app owner or admin has no special ability to decrypt content or grant access outside of the creator's intended flow - it's cryptographically enforced."
+  },
+  CROSS_PLATFORM: {
+    title: "Cross-Platform Portability",
+    content: "Because everything is on-chain, your content and access rights aren't locked to this app. Any application can be built to read and display this content. Your AccessTokens work across all compatible apps, giving you true ownership and freedom from platform lock-in."
+  }
+} as const;

@@ -11,6 +11,7 @@ import { networkConfig } from "./networkConfig.ts";
 import { SuiClient } from "@mysten/sui/client";
 import { isEnokiNetwork, registerEnokiWallets } from '@mysten/enoki';
 import { SessionKeyProvider } from "./providers/SessionKeyProvider.tsx";
+import { ToastProvider } from "./providers/ToastProvider.tsx";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             autoConnect
           >
             <SessionKeyProvider>
-              <App />
+              <ToastProvider>
+                <App />
+              </ToastProvider>
             </SessionKeyProvider>
           </WalletProvider>
         </SuiClientProvider>

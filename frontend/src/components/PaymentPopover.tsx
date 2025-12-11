@@ -1,6 +1,8 @@
 import { Card, Flex, Text, Button, Box, Spinner } from '@radix-ui/themes';
 import { usePayForContent } from '../hooks/usePayForContent';
 import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
+import { InfoTooltip } from './InfoTooltip';
+import { WEB3_BENEFITS } from '../constants';
 
 interface PaymentPopoverProps {
   isOpen: boolean;
@@ -92,9 +94,14 @@ export function PaymentPopover({
 
           {/* Demo Disclaimer */}
           <Flex direction="column" gap="3" py="2">
-            <Text size="3" weight="medium" align="center">
-              🆓 Free Demo Access
-            </Text>
+            <Flex align="center" justify="center" gap="1">
+              <Text size="3" weight="medium" align="center">
+                🆓 Free Demo Access
+              </Text>
+              <InfoTooltip title={WEB3_BENEFITS.TRANSPARENT_FEES.title}>
+                {WEB3_BENEFITS.TRANSPARENT_FEES.content}
+              </InfoTooltip>
+            </Flex>
             <Text size="2" color="gray" align="center" style={{ lineHeight: '1.5' }}>
               For demonstration purposes, this content is free to access.
               In production, creators would set their own fees, and 100% of those
