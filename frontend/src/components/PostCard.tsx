@@ -5,6 +5,9 @@ import { formatTimestamp } from '../utils/formatters';
 import { useState } from 'react';
 import { PaywallOverlay } from './PaywallOverlay';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
+import { InfoTooltip } from './InfoTooltip';
+import { WEB3_BENEFITS } from '../constants';
+import { useToast } from '../providers/ToastProvider';
 
 interface BasePost {
   id: string;
@@ -39,36 +42,27 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
+  const { showToast } = useToast();
 
   const handleLike = () => {
-    if (isLiked) {
-      setLikeCount(prev => prev - 1);
-      trackEvent(AnalyticsEvents.POST_UNLIKED, {
-        post_id: post.id,
-      });
-    } else {
-      setLikeCount(prev => prev + 1);
-      trackEvent(AnalyticsEvents.POST_LIKED, {
-        post_id: post.id,
-      });
-    }
-    setIsLiked(!isLiked);
+    trackEvent(AnalyticsEvents.POST_LIKED, {
+      post_id: post.id,
+    });
+    showToast('This feature has been left as an exercise to the reader :P');
   };
 
   const handleComment = () => {
     trackEvent(AnalyticsEvents.POST_COMMENT_CLICKED, {
       post_id: post.id,
     });
-    console.log('Comment clicked for post:', post.id);
-    // TODO: Implement comment functionality
+    showToast('This feature has been left as an exercise to the reader :P');
   };
 
   const handleShare = () => {
     trackEvent(AnalyticsEvents.POST_SHARE_CLICKED, {
       post_id: post.id,
     });
-    console.log('Share clicked for post:', post.id);
-    // TODO: Implement share functionality
+    showToast('This feature has been left as an exercise to the reader :P');
   };
 
   const isLocked = post.kind === 'locked';
@@ -81,9 +75,14 @@ export function PostCard({ post }: PostCardProps) {
         {/* Author and timestamp header */}
         <Flex justify="between" align="center">
           <Flex direction="column" gap="1">
-            <Text size="2" weight="bold">
-              <AddressDisplay address={post.author} />
-            </Text>
+            <Flex align="center" gap="1">
+              <Text size="2" weight="bold">
+                <AddressDisplay address={post.author} />
+              </Text>
+              <InfoTooltip title={WEB3_BENEFITS.POST_OWNERSHIP.title}>
+                {WEB3_BENEFITS.POST_OWNERSHIP.content}
+              </InfoTooltip>
+            </Flex>
             <Text size="1" color="gray">
               {formatTimestamp(post.timestamp)}
             </Text>
@@ -159,10 +158,7 @@ export function PostCard({ post }: PostCardProps) {
               size="2"
               variant="ghost"
               onClick={handleLike}
-              style={{
-                cursor: 'pointer',
-                color: isLiked ? 'var(--red-9)' : undefined,
-              }}
+              style={{ cursor: 'pointer' }}
             >
               <HeartIcon width="18" height="18" />
             </IconButton>

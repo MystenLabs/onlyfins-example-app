@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { PaymentPopover } from './PaymentPopover';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
+import { InfoTooltip } from './InfoTooltip';
+import { WEB3_BENEFITS } from '../constants';
+import { useToast } from '../providers/ToastProvider';
 
 interface PaywallOverlayProps {
   postId: string;
@@ -12,13 +15,14 @@ interface PaywallOverlayProps {
 export function PaywallOverlay({ postId }: PaywallOverlayProps) {
   const [showPaymentPopover, setShowPaymentPopover] = useState(false);
   const currentAccount = useCurrentAccount();
+  const { showToast } = useToast();
 
   const handleUnlockClick = () => {
     trackEvent(AnalyticsEvents.UNLOCK_CLICKED, {
       post_id: postId,
     });
     if (!currentAccount) {
-      alert('Please sign in at the top of the page first');
+      showToast('Please sign in at the top of the page first');
       return;
     }
     trackEvent(AnalyticsEvents.PAYMENT_MODAL_OPENED, {
@@ -57,12 +61,23 @@ export function PaywallOverlay({ postId }: PaywallOverlayProps) {
         </Box>
 
         <Flex direction="column" gap="1" align="center">
-          <Text size="4" weight="bold">
-            Premium Image
-          </Text>
-          <Text size="2" color="gray">
-            Unlock to view the full image
-          </Text>
+          <Flex align="center" gap="1">
+            <Text size="4" weight="bold">
+              Premium Image
+            </Text>
+            <InfoTooltip title={WEB3_BENEFITS.CREATOR_CONTROL.title}>
+              {WEB3_BENEFITS.CREATOR_CONTROL.content}
+            </InfoTooltip>
+          </Flex>
+          <Flex align="center" gap="1">
+            <Text size="2" color="gray">
+              Unlock to view the full image
+            </Text>
+            <InfoTooltip title={WEB3_BENEFITS.PERMANENT_ACCESS.title}>
+              {WEB3_BENEFITS.PERMANENT_ACCESS.content}
+            </InfoTooltip>
+          </Flex>
+          
         </Flex>
 
         <Button

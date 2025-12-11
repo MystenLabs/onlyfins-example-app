@@ -60,4 +60,5 @@ export const AnalyticsEvents = {
   IMAGE_DECRYPTED: 'image_decrypted',
   GITHUB_CLICKED: 'github_clicked',
   DISCORD_CLICKED: 'discord_clicked',
+  INFO_TOOLTIP_OPENED: 'info_tooltip_opened',
 } as const;
